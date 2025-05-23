@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>User Details</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        background: linear-gradient(to right, #a4d3ff, #dcdada);
+      }
+      .back-btn {
+        margin-top: 20px;
+        margin-left: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container mt-5">
+      <!-- Back Button -->
+      <a href="admin_dashboard.html" class="btn btn-primary back-btn">← Back</a>
+
+      <h3>User Details</h3>
+
+      <!-- Base User Info -->
+      <div class="card">
+        <div class="card-header"><strong>Personal Information</strong></div>
+        <div class="card-body">
+          <p><strong>Full Name:</strong> <span id="full-name"></span></p>
+          <p><strong>Role:</strong> <span id="role"></span></p>
+          <p><strong>Date of Birth:</strong> <span id="dob"></span></p>
+          <p><strong>Age:</strong> <span id="age"></span></p>
+          <p><strong>Gender:</strong> <span id="gender"></span></p>
+          <p><strong>Phone:</strong> <span id="phone"></span></p>
+          <p><strong>Email:</strong> <span id="email"></span></p>
+        </div>
+      </div>
+
+      <!-- Patient Info -->
+      <div class="card mt-4 d-none" id="patient-card">
+        <div class="card-header"><strong>Medical Information</strong></div>
+        <div class="card-body">
+          <p><strong>Medical History:</strong> <span id="conditions"></span></p>
+          <p><strong>Surgical History:</strong> <span id="surgeries"></span></p>
+          <p><strong>Allergies:</strong> <span id="allergies"></span></p>
+          <p><strong>Emergency Contact:</strong> <span id="emergency"></span></p>
+        </div>
+      </div>
+
+      <!-- Doctor Info -->
+      <div class="card mt-4 d-none" id="doctor-card">
+        <div class="card-header"><strong>Doctor Information</strong></div>
+        <div class="card-body">
+          <p><strong>Specialization:</strong> <span id="specialization"></span></p>
+          <p><strong>Hospital Name:</strong> <span id="hospital-name"></span></p>
+          <p><strong>Hospital Address:</strong> <span id="hospital-address"></span></p>
+          <p><strong>Contact Info:</strong> <span id="doctor-contact"></span></p>
+        </div>
+      </div>
+
+      
+
+    <script type="module">
+  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+  const supabaseUrl = "https://sfqhzoorpthmnrjecjkj.supabase.co";
+  const supabaseKey =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmcWh6b29ycHRobW5yamVjamtqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ3MjUyMDksImV4cCI6MjA2MDMwMTIwOX0.zS9xjegQ1mYpt6OIZLEvD_cvXFIDmRy20-9wDLC2ASE";
+
+  const supabase = createClient(supabaseUrl, supabaseKey);
+  const userId = new URLSearchParams(window.location.search).get("userId");
+
+  const { data: user, error } = await supabase
+    .from("users")
+    .select("*")
+    .eq("id", userId)
+    .single();
+
+  if (error || !user) {
+    alert("User not found.");
+    throw error;
+  }
+
+  function calculateAge(dob) {
+    const birthDate = new Date(dob);
+    const currentDate = new Date();
+    let age = currentDate.getFullYear() - birthDate.getFullYear();
+    const monthDiff = currentDate.getMonth() - birthDate.getMonth();
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && currentDate.getDate() < birthDate.getDate())
+    ) {
+      age--;
+    }
+    return age;
+  }
+
+  // Populate base info
+  document.getElementById("full-name").innerText = user.full_name;
+  document.getElementById("role").innerText = user.role;
+  document.getElementById("dob").innerText = user.date_of_birth;
+  document.getElementById("age").innerText = calculateAge(user.date_of_birth);
+  document.getElementById("gender").innerText = user.gender;
+  document.getElementById("phone").innerText = user.phone_number;
+  document.getElementById("email").innerText = user.email;
+
+  // Load patient details if applicable
+  if (user.role === "patient") {
+    const { data: patient } = await supabase
+      .from("patient_records")
+      .select("*")
+      .eq("user_id", userId)
+      .single();
+
+    if (patient) {
+      document.getElementById("patient-card").classList.remove("d-none");
+      document.getElementById("conditions").innerText = patient.medical_history || "N/A";
+      document.getElementById("surgeries").innerText = patient.surgical_history || "N/A";
+      document.getElementById("allergies").innerText = patient.allergies || "N/A";
+      document.getElementById("emergency").innerText =
+        `${patient.emergency_contact_name || "N/A"} (${patient.emergency_contact_phone || "N/A"})`;
+    }
+  }
+
+  // Load doctor details if applicable
+  if (user.role === "doctor") {
+    const { data: doctor } = await supabase
+      .from("doctors")
+      .select("*")
+      .eq("user_id", userId)
+      .single();
+
+    if (doctor) {
+      document.getElementById("doctor-card").classList.remove("d-none");
+      document.getElementById("specialization").innerText = doctor.specialization || "N/A";
+      document.getElementById("hospital-name").innerText = doctor.hospital_name || "N/A";
+      document.getElementById("hospital-address").innerText = doctor.hospital_address || "N/A";
+      document.getElementById("doctor-contact").innerText = doctor.contact_info || "N/A";
+    }
+  }
+
+</script>
+
+    </script>
+  </body>
+</html>
